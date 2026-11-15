@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Brbljator – administracija</title>
+    <link rel="stylesheet" href="stil.css">
+</head>
+<body>
+    <!-- SCRUM-44: admin pregled korisnika -->
+    <main class="kartica siroka">
+        <div class="zaglavlje">
+            <h1>Korisnici</h1>
+            <button id="odjava" class="sporedni">Odjava</button>
+        </div>
+        <p id="poruka" class="greska" role="alert"></p>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Korisničko ime</th><th>E-mail</th><th>Uloga</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="tablica"></tbody>
+        </table>
+    </main>
+
+    <script>
+        const tablica = document.getElementById("tablica");
+        const poruka = document.getElementById("poruka");
+
+        function celija(red, tekst) {
+            const td = red.insertCell();
+            td.textContent = tekst;   // textContent, ne innerHTML – zaštita od ubacivanja HTML-a
+            return td;
+        }
+
+        async function ucitaj() {
+            const odgovor = await fetch("/api/admin/korisnici");
+            if (odgovor.status === 401) { location.href = "index.html"; return; }    // nije prijavljen
+            if (odgovor.status === 403) { location.href = "pocetna.html"; return; }  // nije admin (SCRUM-45)
+
+            const korisnici = await odgovor.json();
+            tablica.replaceChildren();
+
+            for (const k of korisnici) {
+                const red = tablica.insertRow();
+                celija(red, k.id);
+                celija(red, k.korisnickoIme);
+                celija(red, k.email);
+                celija(red, k.isAdmin ? "administrator" : "korisnik");
+                celija(red, k.blokiran ? "blokiran" : "aktivan");
+
+                const gumb = document.createElement("button");
+                gumb.textContent = k.blokiran ? "Odblokiraj" : "Blokiraj";
+                if (!k.blokiran) gumb.className = "opasno";
+                gumb.addEventListener("click", () => promijeniBlokadu(k.id, !k.blokiran));
+                red.insertCell().appendChild(gumb);
+            }
+        }
+
+        // SCRUM-16: blokiranje / odblokiranje
+        async function promijeniBlokadu(id, blokiran) {
+            poruka.textContent = "";
+            const odgovor = await fetch(`/api/admin/korisnici/${id}/blokiran`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(blokiran)
+            });
+            if (!odgovor.ok) {
+                const podaci = await odgovor.json().catch(() => ({}));
+                poruka.textContent = podaci.poruka ?? "Promjena nije uspjela.";
+            }
+            await ucitaj();
+        }
+
+        document.getElementById("odjava").addEventListener("click", async () => {
+            await fetch("/api/auth/logout", { method: "POST" });
+            location.href = "index.html";
+        });
+
+        ucitaj();
+    </script>
+</body>
+</html>
