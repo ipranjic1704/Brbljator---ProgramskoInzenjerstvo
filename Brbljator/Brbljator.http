@@ -1,6 +1,22 @@
 @Brbljator_HostAddress = http://localhost:5083
 
-GET {{Brbljator_HostAddress}}/weatherforecast/
-Accept: application/json
+### Ispravna prijava (admin) – očekivano 200
+POST {{Brbljator_HostAddress}}/api/auth/login
+Content-Type: application/json
 
-###
+{ "korisnickoIme": "admin", "lozinka": "admin123" }
+
+### Kriva lozinka – očekivano 401 + poruka
+POST {{Brbljator_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "korisnickoIme": "admin", "lozinka": "kriva" }
+
+### Prazan unos – očekivano 400
+POST {{Brbljator_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "korisnickoIme": "", "lozinka": "" }
+
+### Admin popis bez prijave – očekivano 401
+GET {{Brbljator_HostAddress}}/api/admin/korisnici
