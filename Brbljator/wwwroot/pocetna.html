@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Brbljator</title>
+    <link rel="stylesheet" href="stil.css">
+</head>
+<body>
+    <main class="kartica">
+        <div class="zaglavlje">
+            <h1>Brbljator</h1>
+            <button id="odjava" class="sporedni">Odjava</button>
+        </div>
+        <p>Prijavljeni ste kao <strong id="korisnik">…</strong>.</p>
+        <p>Ovdje će biti vaše fraze i kvizovi (idući sprint).</p>
+    </main>
+
+    <script>
+        (async () => {
+            const odgovor = await fetch("/api/auth/ja");
+            if (!odgovor.ok) { location.href = "index.html"; return; }   // nije prijavljen
+            const ja = await odgovor.json();
+            document.getElementById("korisnik").textContent = ja.korisnickoIme;
+        })();
+
+        document.getElementById("odjava").addEventListener("click", async () => {
+            await fetch("/api/auth/logout", { method: "POST" });
+            location.href = "index.html";
+        });
+    </script>
+</body>
+</html>
